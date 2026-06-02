@@ -28,19 +28,29 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check if tag is from main branch
+      - name: Check if tag is from release branch
         run: |
           TAG_REF="${GITHUB_REF##*/}"
-          echo "Checking if tag $TAG_REF is from main branch..."
+          echo "Checking if tag $TAG_REF is from an allowed release branch..."
 
-          TAG_COMMIT=$(git rev-list -n 1 $TAG_REF)
-          MAIN_COMMITS=$(git rev-list origin/main)
+          TAG_COMMIT=$(git rev-list -n 1 "$TAG_REF")
+          ALLOWED=0
 
-          if echo "$MAIN_COMMITS" | grep -q "$TAG_COMMIT"; then
-            echo "✅ Tag $TAG_REF is from main branch"
-          else
-            echo "❌ Tag $TAG_REF is not from main branch"
-            echo "This release workflow only accepts tags from main branch."
+          for BRANCH in main dev; do
+            if ! git rev-parse --verify "origin/$BRANCH" >/dev/null 2>&1; then
+              echo "Skip origin/$BRANCH (not found)"
+              continue
+            fi
+            if git merge-base --is-ancestor "$TAG_COMMIT" "origin/$BRANCH"; then
+              echo "✅ Tag $TAG_REF is reachable from origin/$BRANCH"
+              ALLOWED=1
+              break
+            fi
+          done
+
+          if [ "$ALLOWED" -ne 1 ]; then
+            echo "❌ Tag $TAG_REF is not on origin/main or origin/dev"
+            echo "Push the tag from your default release branch (main or dev)."
             exit 1
           fi
 
@@ -83,7 +93,7 @@ jobs:
           echo "TAG_NAME=$TAG_REF" >> $GITHUB_ENV
           VERSION=$(echo "$TAG_REF" | sed 's/^v//')
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "DOWNLOAD_URL=https://github.com/clash-verge-rev/clash-verge-rev/releases/download/$TAG_REF" >> $GITHUB_ENV
+          echo "DOWNLOAD_URL=https://github.com/${{ github.repository }}/releases/download/$TAG_REF" >> $GITHUB_ENV
         shell: bash
 
       - run: |
@@ -660,7 +670,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install jq
           echo "VERSION=$(cat package.json | jq '.version' | tr -d '"')" >> $GITHUB_ENV
-          echo "DOWNLOAD_URL=https://github.com/clash-verge-rev/clash-verge-rev/releases/download/v$(cat package.json | jq '.version' | tr -d '"')" >> $GITHUB_ENV
+          echo "DOWNLOAD_URL=https://github.com/${{ github.repository }}/releases/download/v$(cat package.json | jq '.version' | tr -d '"')" >> $GITHUB_ENV
           echo "BUILDTIME=$(TZ=Asia/Shanghai date)" >> $GITHUB_ENV
 
       - name: Generate release.txt
