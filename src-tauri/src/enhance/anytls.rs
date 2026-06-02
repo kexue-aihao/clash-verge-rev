@@ -4,9 +4,13 @@ use serde_yaml_ng::{Mapping, Value};
 /// sing-box path for AnyTLS does not honor URI `pcs`. Wrong panel pins therefore
 /// break Clash but not v2rayN. Strip leaf pin and skip cert verify instead.
 pub fn relax_anytls_tls_verify(mut config: Mapping) -> Mapping {
-    let Some(Value::Sequence(proxies)) = config.get_mut("proxies") else {
+    let Some(Value::Sequence(proxies)) = config.get_mut(Value::String("proxies".into())) else {
         return config;
     };
+
+    let key_type = Value::String("type".into());
+    let key_fingerprint = Value::String("fingerprint".into());
+    let key_skip_cert_verify = Value::String("skip-cert-verify".into());
 
     for proxy in proxies.iter_mut() {
         let Some(map) = proxy.as_mapping_mut() else {
@@ -14,7 +18,7 @@ pub fn relax_anytls_tls_verify(mut config: Mapping) -> Mapping {
         };
 
         let is_anytls = map
-            .get("type")
+            .get(&key_type)
             .and_then(Value::as_str)
             .is_some_and(|t| t.eq_ignore_ascii_case("anytls"));
 
@@ -22,11 +26,8 @@ pub fn relax_anytls_tls_verify(mut config: Mapping) -> Mapping {
             continue;
         }
 
-        map.remove("fingerprint");
-        map.insert(
-            Value::String("skip-cert-verify".into()),
-            Value::Bool(true),
-        );
+        map.remove(&key_fingerprint);
+        map.insert(key_skip_cert_verify, Value::Bool(true));
     }
 
     config
