@@ -22,8 +22,11 @@ pub fn relax_anytls_tls_verify(mut config: Mapping) -> Mapping {
             continue;
         }
 
-        map.remove("fingerprint".into());
-        map.insert("skip-cert-verify".into(), Value::Bool(true));
+        map.remove("fingerprint");
+        map.insert(
+            Value::String("skip-cert-verify".into()),
+            Value::Bool(true),
+        );
     }
 
     config
