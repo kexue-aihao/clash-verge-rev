@@ -10,7 +10,6 @@ pub fn relax_anytls_tls_verify(mut config: Mapping) -> Mapping {
 
     let key_type = Value::String("type".into());
     let key_fingerprint = Value::String("fingerprint".into());
-    let key_skip_cert_verify = Value::String("skip-cert-verify".into());
 
     for proxy in proxies.iter_mut() {
         let Some(map) = proxy.as_mapping_mut() else {
@@ -27,7 +26,10 @@ pub fn relax_anytls_tls_verify(mut config: Mapping) -> Mapping {
         }
 
         map.remove(&key_fingerprint);
-        map.insert(key_skip_cert_verify, Value::Bool(true));
+        map.insert(
+            Value::String("skip-cert-verify".into()),
+            Value::Bool(true),
+        );
     }
 
     config
