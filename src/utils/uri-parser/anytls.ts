@@ -58,9 +58,12 @@ export function URI_AnyTLS(line: string): IProxyAnyTLSConfig {
     }
   }
 
-  const fingerprint = params.fingerprint ?? params.hpkp
+  const fingerprint = params.fingerprint ?? params.hpkp ?? params.pcs
   if (fingerprint) {
     proxy.fingerprint = fingerprint
+  }
+  if (!proxy.sni && params.vcn) {
+    proxy.sni = params.vcn
   }
   const clientFingerprint = params['client-fingerprint'] ?? params.fp
   if (clientFingerprint) {

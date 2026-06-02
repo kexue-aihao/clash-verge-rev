@@ -1,3 +1,4 @@
+mod anytls;
 mod chain;
 pub mod field;
 mod merge;
@@ -6,6 +7,7 @@ pub mod seq;
 mod tun;
 
 use self::{
+    anytls::relax_anytls_tls_verify,
     chain::{AsyncChainItemFrom as _, ChainItem, ChainType},
     field::{use_keys, use_lowercase, use_sort},
     merge::use_merge,
@@ -641,6 +643,8 @@ pub async fn enhance() -> Result<(Mapping, HashSet<String>, HashMap<String, Resu
 
     // builtin scripts
     let mut config = apply_builtin_scripts(config, clash_core, enable_builtin).await;
+
+    config = relax_anytls_tls_verify(config);
 
     config = cleanup_proxy_groups(config);
 
